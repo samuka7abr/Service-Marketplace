@@ -1,0 +1,43 @@
+version: '3.9'
+
+services:
+  dynamodb:
+    image: amazon/dynamodb-local
+    container_name: dynamodb-local
+    command: -jar DynamoDBLocal.jar -sharedDb
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./docker/dynamo/data:/home/dynamodblocal/data
+    networks:
+      - app-net
+
+  api:
+    build:
+      context: .
+      target: development
+    container_name: marketplace-api
+    command: pnpm run start:dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - pnpm-store:/root/.local/share/pnpm/store
+    environment:
+      AWS_REGION: "us-east-1"
+      DYNAMO_ENDPOINT: "http://dynamodb-local:8000"
+      TABLE_NAME: "Marketplace"
+    depends_on:
+      - dynamodb
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
+
+volumes:
+  node_modules:
+  pnpm-store:
+
