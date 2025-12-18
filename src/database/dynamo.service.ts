@@ -4,14 +4,14 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 
 @Injectable()
 export class DynamoService {
-  public doc: DynamoDBDocumentClient;
+    public doc: DynamoDBDocumentClient;
 
-  constructor() {
-    const client = new DynamoDBClient({
-      region: process.env.AWS_REGION,
-      endpoint: process.env.DYNAMO_ENDPOINT,
-    });
+    constructor() {
+        const client = new DynamoDBClient({
+            region: process.env.AWS_REGION,
+            endpoint: process.env.DYNAMO_ENDPOINT,
+        });
 
-    this.doc = DynamoDBDocumentClient.from(client);
-  }
+        this.doc = DynamoDBDocumentClient.from(client);
+    }
 }
