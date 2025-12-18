@@ -1,9 +1,11 @@
 export class User {
-    uuid: string;
-    email: string;
-    password: string;
-    userName: string;
-    type: 'CLIENT' | 'PROVIDER';
-    createdAt: Date;
-    updatedAt: Date;
+    constructor(
+        public uuid: string,
+        public email: string,
+        public password: string,
+        public userName: string,
+        public type: 'CLIENT' | 'PROVIDER',
+        public createdAt: Date,
+        public updatedAt: Date,
+    ) {}
 }
