@@ -1,4 +1,4 @@
-# Service Marketplace API
+# Service Marketplace API 
 
 A **Service Marketplace API** é uma aplicação construída em NestJS que simula um marketplace de serviços, onde clientes podem criar solicitações, prestadores podem oferecer serviços e enviar propostas, e ambas as partes interagem dentro de um fluxo simples e funcional.
 

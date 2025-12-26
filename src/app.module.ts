@@ -4,8 +4,8 @@ import { AppService } from './app.service';
 import { DynamoModule } from './database/dynamo.module';
 
 @Module({
-  imports: [DynamoModule],
-  controllers: [AppController],
-  providers: [AppService],
+    imports: [DynamoModule],
+    controllers: [AppController],
+    providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}
