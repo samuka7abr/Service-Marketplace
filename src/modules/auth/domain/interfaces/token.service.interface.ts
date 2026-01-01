@@ -1,13 +1,15 @@
+import { TokenPayload } from './token-payload.interface';
+
 export interface ITokenService {
     generateToken(
         payload: object,
         expiresIn?: string | number,
-    ): Promise<string>;
-    verifyToken(token: string): Promise<object | string>;
-    decodeToken(token: string): object | string;
+    ): Promise<TokenPayload>;
+    verifyToken(token: string): Promise<TokenPayload>;
+    decodeToken(token: string): TokenPayload;
     generateRefreshToken(
         payload: object,
         expiresIn?: string | number,
-    ): Promise<string>;
-    verifyRefreshToken(token: string): Promise<object | string>;
+    ): Promise<TokenPayload>;
+    verifyRefreshToken(token: string): Promise<TokenPayload>;
 }
