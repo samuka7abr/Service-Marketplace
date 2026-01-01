@@ -2,7 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { IUserRepository } from '../../domain/interfaces/user.repository.interface';
 import { DynamoService } from '../../../../database/dynamo.service';
 import { User } from '../../domain/entities/user.entity';
-import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import {
+    GetCommand,
+    PutCommand,
+    QueryCommand,
+    DeleteCommand,
+    UpdateCommand,
+} from '@aws-sdk/lib-dynamodb';
 
 @Injectable()
 export class UserRepository implements IUserRepository {
@@ -62,18 +68,93 @@ export class UserRepository implements IUserRepository {
     }
 
     async findByUserName(userName: string): Promise<User | null> {
-        throw new Error('Method not implemented.');
+        const response = await this.dynamoService.doc.send(
+            new QueryCommand({
+                TableName: 'Marketplace',
+                IndexName: 'GSI2',
+                KeyConditionExpression: 'GSI2PK = :pk',
+                ExpressionAttributeValues: {
+                    ':pk': `USERNAME#${userName}`,
+                },
+                Limit: 1,
+            }),
+        );
+
+        if (!response.Items || response.Items.length === 0) return null;
+
+        const item = response.Items[0];
+
+        return new User(
+            item.uuid as string,
+            item.email as string,
+            item.password as string,
+            item.userName as string,
+            item.type as 'CLIENT' | 'PROVIDER',
+            new Date(item.createdAt as string),
+            new Date(item.updatedAt as string),
+        );
     }
 
-    async findById(id: string): Promise<User | null> {
-        throw new Error('Method not implemented.');
+    async findById(uuid: string): Promise<User | null> {
+        const result = await this.dynamoService.doc.send(
+            new GetCommand({
+                TableName: 'Marketplace',
+                Key: {
+                    PK: `USER#${uuid}`,
+                    SK: 'META',
+                },
+            }),
+        );
+
+        if (!result.Item) return null;
+
+        const item = result.Item;
+
+        return new User(
+            item.uuid as string,
+            item.email as string,
+            item.password as string,
+            item.userName as string,
+            item.type as 'CLIENT' | 'PROVIDER',
+            new Date(item.createdAt as string),
+            new Date(item.updatedAt as string),
+        );
     }
 
     async update(user: User): Promise<void> {
-        throw new Error('Method not implemented.');
+        await this.dynamoService.doc.send(
+            new UpdateCommand({
+                TableName: 'Marketplace',
+                Key: {
+                    PK: `USER#${user.uuid}`,
+                    SK: 'META',
+                },
+                UpdateExpression:
+                    'SET email = :email, password = :password, userName = :userName, type = :type, updatedAt = :updatedAt',
+                ExpressionAttributeValues: {
+                    ':email': user.email,
+                    ':password': user.password,
+                    ':userName': user.userName,
+                    ':type': user.type,
+                    ':updatedAt': user.updatedAt.toISOString(),
+                },
+                ExpressionAttributeNames: {
+                    '#type': 'type',
+                },
+                ConditionExpression: 'attribute_exists(PK)',
+            }),
+        );
     }
 
-    async delete(id: string): Promise<void> {
-        throw new Error('Method not implemented.');
+    async delete(uuid: string): Promise<void> {
+        await this.dynamoService.doc.send(
+            new DeleteCommand({
+                TableName: 'Marketplace',
+                Key: {
+                    PK: `USER#${uuid}`,
+                    SK: 'META',
+                },
+            }),
+        );
     }
 }
