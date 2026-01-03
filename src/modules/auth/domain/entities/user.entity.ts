@@ -7,5 +7,5 @@ export class User {
         public type: 'CLIENT' | 'PROVIDER',
         public createdAt: Date,
         public updatedAt: Date,
-    ) {}
+    ) { }
 }
