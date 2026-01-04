@@ -1,4 +1,4 @@
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { ITokenService } from '../../domain/interfaces/token.service.interface';
 import { Injectable } from '@nestjs/common';
 import { TokenPayload } from '../../domain/interfaces/token-payload.interface';
@@ -9,16 +9,16 @@ export class TokenService implements ITokenService {
 
     async generateToken(
         payload: object,
-        expiresIn?: string | number,
+        expiresIn?: JwtSignOptions['expiresIn'],
     ): Promise<TokenPayload> {
-        const token = this.jwtService.sign(payload, {
+        const token = this.jwtService.sign(payload as Buffer | object, {
             secret: process.env.JWT_SECRET,
-            expiresIn: expiresIn || '24h',
+            expiresIn: expiresIn ?? '24h',
         });
-        return Promise.resolve({
+        return {
             ...payload,
             token,
-        } as unknown as TokenPayload);
+        } as unknown as TokenPayload;
     }
 
     async verifyToken(token: string): Promise<TokenPayload> {
@@ -45,16 +45,16 @@ export class TokenService implements ITokenService {
 
     async generateRefreshToken(
         payload: object,
-        expiresIn?: string | number,
+        expiresIn?: JwtSignOptions['expiresIn'],
     ): Promise<TokenPayload> {
-        const token = this.jwtService.sign(payload, {
+        const token = this.jwtService.sign(payload as Buffer | object, {
             secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
-            expiresIn: expiresIn || '7d',
+            expiresIn: expiresIn ?? '7d',
         });
-        return Promise.resolve({
+        return {
             ...payload,
             token,
-        } as unknown as TokenPayload);
+        } as unknown as TokenPayload;
     }
 
     async verifyRefreshToken(token: string): Promise<TokenPayload> {
