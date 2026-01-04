@@ -23,7 +23,7 @@ export class AuthController {
         const { password, ...userWithoutPassword } = user;
 
         return {
-            messsage: 'User registered successfully',
+            message: 'User registered successfully',
             user: userWithoutPassword,
         }
     }
