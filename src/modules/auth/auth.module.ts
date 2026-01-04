@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { DynamoModule } from '../../database/dynamo.module';
 
@@ -18,17 +19,23 @@ import { ValidateUserUseCase } from './application/use-cases/validate-user.use-c
 // Controllers
 import { AuthController } from './presentation/controllers/auth.controller';
 
+// Strategies & Guards
+import { JwtStrategy } from './infrastructure/strategies/jwt.strategy';
+import { JwtAuthGuard } from './infrastructure/guards/jwt-auth.guard';
+
 @Module({
     imports: [
         DynamoModule,
+        PassportModule.register({ defaultStrategy: 'jwt' }),
         JwtModule.registerAsync({
             imports: [ConfigModule],
-            useFactory: async (configService: ConfigService) => ({
-                secret: configService.get<string>('JWT_SECRET'),
-                signOptions: {
-                    expiresIn: configService.get<string>('JWT_EXPIRES_IN', '15m'),
-                },
-            }),
+            useFactory: (configService: ConfigService): JwtModuleOptions => {
+                const expiresIn = configService.get<string>('JWT_EXPIRES_IN') ?? '15m';
+                return {
+                    secret: configService.getOrThrow<string>('JWT_SECRET'),
+                    signOptions: { expiresIn } as JwtModuleOptions['signOptions'],
+                };
+            },
             inject: [ConfigService],
         }),
     ],
@@ -49,6 +56,9 @@ import { AuthController } from './presentation/controllers/auth.controller';
         LoginUseCase,
         RefreshTokenUseCase,
         ValidateUserUseCase,
+        // Strategies & Guards
+        JwtStrategy,
+        JwtAuthGuard,
     ],
     exports: [
         'IUserRepository',
@@ -57,6 +67,7 @@ import { AuthController } from './presentation/controllers/auth.controller';
         LoginUseCase,
         RefreshTokenUseCase,
         ValidateUserUseCase,
+        JwtAuthGuard,
     ],
 })
 export class AuthModule { }
