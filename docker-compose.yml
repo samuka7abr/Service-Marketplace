@@ -12,6 +12,28 @@ services:
     networks:
       - app-net
 
+  db-init:
+    build:
+      context: .
+      target: development
+    container_name: dynamodb-init
+    command: sh -c "chmod +x /app/scripts/init-db.sh && /app/scripts/init-db.sh"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - pnpm-store:/root/.local/share/pnpm/store
+    environment:
+      AWS_REGION: "us-east-1"
+      DYNAMO_ENDPOINT: "http://dynamodb:8000"
+      TABLE_NAME: "Marketplace"
+      AWS_ACCESS_KEY_ID: "fake"
+      AWS_SECRET_ACCESS_KEY: "fake"
+    depends_on:
+      - dynamodb
+    networks:
+      - app-net
+    restart: "no"
+
   api:
     build:
       context: .
@@ -26,10 +48,13 @@ services:
       - pnpm-store:/root/.local/share/pnpm/store
     environment:
       AWS_REGION: "us-east-1"
-      DYNAMO_ENDPOINT: "http://dynamodb-local:8000"
+      DYNAMO_ENDPOINT: "http://dynamodb:8000"
       TABLE_NAME: "Marketplace"
     depends_on:
-      - dynamodb
+      db-init:
+        condition: service_completed_successfully
+      dynamodb:
+        condition: service_started
     networks:
       - app-net
 

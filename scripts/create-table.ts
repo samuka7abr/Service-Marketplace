@@ -1,8 +1,8 @@
 import { DynamoDBClient, CreateTableCommand } from '@aws-sdk/client-dynamodb';
 
 const client = new DynamoDBClient({
-    region: 'us-east-1',
-    endpoint: 'http://localhost:8000',
+    region: process.env.AWS_REGION || 'us-east-1',
+    endpoint: process.env.DYNAMO_ENDPOINT || 'http://localhost:8000',
     credentials: {
         accessKeyId: 'fake',
         secretAccessKey: 'fake',
@@ -11,12 +11,13 @@ const client = new DynamoDBClient({
 
 async function createMarketplaceTable() {
     const command = new CreateTableCommand({
-        TableName: 'Marketplace',
+        TableName: process.env.TABLE_NAME || 'Marketplace',
         AttributeDefinitions: [
             { AttributeName: 'PK', AttributeType: 'S' },
             { AttributeName: 'SK', AttributeType: 'S' },
             { AttributeName: 'GSI1PK', AttributeType: 'S' },
             { AttributeName: 'GSI1SK', AttributeType: 'S' },
+            { AttributeName: 'GSI2PK', AttributeType: 'S' },
         ],
         KeySchema: [
             { AttributeName: 'PK', KeyType: 'HASH' },
@@ -28,6 +29,13 @@ async function createMarketplaceTable() {
                 KeySchema: [
                     { AttributeName: 'GSI1PK', KeyType: 'HASH' },
                     { AttributeName: 'GSI1SK', KeyType: 'RANGE' },
+                ],
+                Projection: { ProjectionType: 'ALL' },
+            },
+            {
+                IndexName: 'GSI2',
+                KeySchema: [
+                    { AttributeName: 'GSI2PK', KeyType: 'HASH' },
                 ],
                 Projection: { ProjectionType: 'ALL' },
             },
