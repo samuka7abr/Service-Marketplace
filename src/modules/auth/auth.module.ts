@@ -2,10 +2,9 @@ import { Module } from '@nestjs/common';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { DynamoModule } from '../../database/dynamo.module';
 
-// Repositories
-import { UserRepository } from './infrastructure/repositories/user.repository';
+// Import Users Module (fonte única de verdade para User)
+import { UsersModule } from '../users/users.module';
 
 // Services
 import { TokenService } from './infrastructure/services/token.service';
@@ -25,15 +24,18 @@ import { JwtAuthGuard } from './infrastructure/guards/jwt-auth.guard';
 
 @Module({
     imports: [
-        DynamoModule,
+        UsersModule,
         PassportModule.register({ defaultStrategy: 'jwt' }),
         JwtModule.registerAsync({
             imports: [ConfigModule],
             useFactory: (configService: ConfigService): JwtModuleOptions => {
-                const expiresIn = configService.get<string>('JWT_EXPIRES_IN') ?? '15m';
+                const expiresIn =
+                    configService.get<string>('JWT_EXPIRES_IN') ?? '15m';
                 return {
                     secret: configService.getOrThrow<string>('JWT_SECRET'),
-                    signOptions: { expiresIn } as JwtModuleOptions['signOptions'],
+                    signOptions: {
+                        expiresIn,
+                    } as JwtModuleOptions['signOptions'],
                 };
             },
             inject: [ConfigService],
@@ -41,11 +43,6 @@ import { JwtAuthGuard } from './infrastructure/guards/jwt-auth.guard';
     ],
     controllers: [AuthController],
     providers: [
-        // Repositories
-        {
-            provide: 'IUserRepository',
-            useClass: UserRepository,
-        },
         // Services
         {
             provide: 'ITokenService',
@@ -61,7 +58,6 @@ import { JwtAuthGuard } from './infrastructure/guards/jwt-auth.guard';
         JwtAuthGuard,
     ],
     exports: [
-        'IUserRepository',
         'ITokenService',
         RegisterUserUseCase,
         LoginUseCase,
@@ -70,4 +66,4 @@ import { JwtAuthGuard } from './infrastructure/guards/jwt-auth.guard';
         JwtAuthGuard,
     ],
 })
-export class AuthModule { }
+export class AuthModule {}

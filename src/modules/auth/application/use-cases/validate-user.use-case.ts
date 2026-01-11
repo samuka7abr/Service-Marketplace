@@ -1,8 +1,8 @@
 import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import type { ITokenService } from '../../domain/interfaces/token.service.interface';
-import type { IUserRepository } from '../../domain/interfaces/user.repository.interface';
+import type { IUserRepository } from '../../../users/domain/interfaces/user.repository.interface';
 import { TokenPayload } from '../../domain/interfaces/token-payload.interface';
-import { User } from '../../domain/entities/user.entity';
+import { User } from '../../../users/domain/entities/user.entity';
 
 @Injectable()
 export class ValidateUserUseCase {

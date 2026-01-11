@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
-import type { IUserRepository } from '../../domain/interfaces/user.repository.interface';
+import type { IUserRepository } from '../../../users/domain/interfaces/user.repository.interface';
 import type { ITokenService } from '../../domain/interfaces/token.service.interface';
 import { TokenPayload } from '../../domain/interfaces/token-payload.interface';
 import * as bcrypt from 'bcrypt';

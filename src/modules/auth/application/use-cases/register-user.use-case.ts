@@ -1,6 +1,6 @@
 import { Injectable, ConflictException, Inject } from '@nestjs/common';
-import type { IUserRepository } from '../../domain/interfaces/user.repository.interface';
-import { User } from '../../domain/entities/user.entity';
+import type { IUserRepository } from '../../../users/domain/interfaces/user.repository.interface';
+import { User } from '../../../users/domain/entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 
