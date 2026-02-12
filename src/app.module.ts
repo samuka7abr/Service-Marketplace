@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { DynamoModule } from './database/dynamo.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ServicesModule } from './modules/services/services.module';
 
 @Module({
     imports: [
@@ -12,6 +13,7 @@ import { AuthModule } from './modules/auth/auth.module';
         DynamoModule,
         UsersModule,
         AuthModule,
+        ServicesModule,
     ],
     controllers: [AppController],
     providers: [AppService],
