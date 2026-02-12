@@ -8,6 +8,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ServicesModule } from './modules/services/services.module';
 import { RequestsModule } from './modules/requests/requests.module';
 import { ProposalsModule } from './modules/proposals/proposals.module';
+import { MediaModule } from './modules/media/media.module';
 
 @Module({
     imports: [
@@ -18,6 +19,7 @@ import { ProposalsModule } from './modules/proposals/proposals.module';
         ServicesModule,
         RequestsModule,
         ProposalsModule,
+        MediaModule,
     ],
     controllers: [AppController],
     providers: [AppService],

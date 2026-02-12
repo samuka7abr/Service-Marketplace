@@ -23,6 +23,7 @@ async function bootstrap() {
         .addTag('Serviços')
         .addTag('Solicitações')
         .addTag('Propostas')
+        .addTag('Mídia')
         .addTag('Usuários')
         .addTag('Autenticação')
         .addBearerAuth()
