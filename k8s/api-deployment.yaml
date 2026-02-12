@@ -1,0 +1,145 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: marketplace-api
+  namespace: marketplace
+  labels:
+    app: marketplace-api
+    component: backend
+spec:
+  replicas: 3  # Múltiplas instâncias para alta disponibilidade
+  selector:
+    matchLabels:
+      app: marketplace-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: marketplace-api
+        component: backend
+        version: v1
+    spec:
+      initContainers:
+      # Aguardar LocalStack estar pronto
+      - name: wait-for-localstack
+        image: busybox:latest
+        command: 
+        - sh
+        - -c
+        - |
+          until wget -q --spider http://localstack-service:4566/_localstack/health; do
+            echo "Aguardando LocalStack..."
+            sleep 2
+          done
+          echo "LocalStack está pronto!"
+      
+      containers:
+      - name: api
+        image: marketplace-api:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: marketplace-config
+              key: NODE_ENV
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: marketplace-config
+              key: PORT
+        - name: AWS_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: marketplace-config
+              key: AWS_REGION
+        - name: AWS_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: marketplace-config
+              key: AWS_ENDPOINT
+        - name: DYNAMODB_TABLE
+          valueFrom:
+            configMapKeyRef:
+              name: marketplace-config
+              key: DYNAMODB_TABLE
+        - name: AWS_S3_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: marketplace-config
+              key: AWS_S3_BUCKET
+        - name: PRESIGNED_URL_EXPIRATION
+          valueFrom:
+            configMapKeyRef:
+              name: marketplace-config
+              key: PRESIGNED_URL_EXPIRATION
+        - name: JWT_EXPIRATION_TIME
+          valueFrom:
+            configMapKeyRef:
+              name: marketplace-config
+              key: JWT_EXPIRATION_TIME
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: marketplace-secrets
+              key: AWS_ACCESS_KEY_ID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: marketplace-secrets
+              key: AWS_SECRET_ACCESS_KEY
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: marketplace-secrets
+              key: JWT_SECRET
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: marketplace-api-service
+  namespace: marketplace
+  labels:
+    app: marketplace-api
+spec:
+  type: LoadBalancer  # Expõe externamente
+  selector:
+    app: marketplace-api
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  sessionAffinity: ClientIP  # Sticky sessions
