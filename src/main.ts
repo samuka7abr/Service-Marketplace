@@ -21,6 +21,8 @@ async function bootstrap() {
         .setDescription('API para gerenciamento de marketplace de serviços')
         .setVersion('1.0')
         .addTag('Serviços')
+        .addTag('Solicitações')
+        .addTag('Propostas')
         .addTag('Usuários')
         .addTag('Autenticação')
         .addBearerAuth()

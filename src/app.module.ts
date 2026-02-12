@@ -6,6 +6,8 @@ import { DynamoModule } from './database/dynamo.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ServicesModule } from './modules/services/services.module';
+import { RequestsModule } from './modules/requests/requests.module';
+import { ProposalsModule } from './modules/proposals/proposals.module';
 
 @Module({
     imports: [
@@ -14,6 +16,8 @@ import { ServicesModule } from './modules/services/services.module';
         UsersModule,
         AuthModule,
         ServicesModule,
+        RequestsModule,
+        ProposalsModule,
     ],
     controllers: [AppController],
     providers: [AppService],
