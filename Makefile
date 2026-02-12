@@ -1,29 +1,128 @@
-.PHONY: module help
+.PHONY: help install dev-docker dev-k8s build test clean terraform-init terraform-apply k8s-deploy k8s-clean
 
-help: ## Mostra esta mensagem de ajuda
-	@printf "\033[0;36mComandos disponíveis:\033[0m\n"
-	@printf "\n"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[0;36m%-20s\033[0m %s\n", $$1, $$2}'
+help:
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
 
-module: ## Cria um novo módulo com a estrutura Clean Architecture (use: make module name=nome-do-modulo)
-ifndef name
-	@printf "\033[0;31m❌ Erro: Por favor, forneça o nome do módulo.\033[0m\n"
-	@printf "\033[0;33mUso: make module name=<nome-do-modulo>\033[0m\n"
-	@printf "\033[0;33mExemplo: make module name=chat\033[0m\n"
-	@exit 1
-endif
-	@printf "\033[0;34m📦 Criando módulo: \033[0;36m$(name)\033[0;34m...\033[0m\n"
-	@mkdir -p src/modules/$(name)/application/use-cases
-	@mkdir -p src/modules/$(name)/domain/entities
-	@mkdir -p src/modules/$(name)/domain/interfaces
-	@mkdir -p src/modules/$(name)/infrastructure/repositories
-	@mkdir -p src/modules/$(name)/infrastructure/guards
-	@mkdir -p src/modules/$(name)/infrastructure/services
-	@mkdir -p src/modules/$(name)/infrastructure/strategies
-	@mkdir -p src/modules/$(name)/presentation/controllers
-	@mkdir -p src/modules/$(name)/presentation/dto
-	@touch src/modules/$(name)/$(name).module.ts
-	@printf "\033[0;32m✅ Módulo '\033[0;36m$(name)\033[0;32m' criado com sucesso!\033[0m\n"
-	@printf "\n"
-	@printf "\033[0;36mEstrutura criada:\033[0m\n"
-	@tree src/modules/$(name) 2>/dev/null || find src/modules/$(name) -print | sed -e 's;[^/]*/;|____;g;s;____|;  |;g'
+install: ## Instalar dependências
+	npm install
+
+# Docker Compose
+dev-docker: ## Iniciar com Docker Compose + LocalStack
+	docker-compose up -d
+
+dev-docker-logs: ## Ver logs do Docker Compose
+	docker-compose logs -f
+
+dev-docker-down: ## Parar Docker Compose
+	docker-compose down
+
+dev-docker-clean: ## Parar e limpar volumes do Docker
+	docker-compose down -v
+
+# Terraform
+terraform-init: ## Inicializar Terraform
+	cd terraform && terraform init
+
+terraform-plan: ## Planejar infraestrutura
+	cd terraform && terraform plan
+
+terraform-apply: ## Aplicar infraestrutura
+	cd terraform && terraform apply -auto-approve
+
+terraform-destroy: ## Destruir infraestrutura
+	cd terraform && terraform destroy -auto-approve
+
+terraform-output: ## Ver outputs do Terraform
+	cd terraform && terraform output
+
+# Kubernetes
+k8s-deploy: ## Deploy completo no Kubernetes
+	./k8s/deploy.sh
+
+k8s-status: ## Ver status dos pods
+	kubectl get all -n marketplace
+
+k8s-logs: ## Ver logs da API no Kubernetes
+	kubectl logs -f -l app=marketplace-api -n marketplace
+
+k8s-logs-localstack: ## Ver logs do LocalStack
+	kubectl logs -f -l app=localstack -n marketplace
+
+k8s-scale: ## Escalar API manualmente (ex: make k8s-scale REPLICAS=5)
+	kubectl scale deployment marketplace-api --replicas=$(REPLICAS) -n marketplace
+
+k8s-hpa-status: ## Ver status do HPA
+	kubectl get hpa -n marketplace
+
+k8s-port-forward: ## Port-forward para acessar localmente
+	kubectl port-forward svc/marketplace-api-service 3000:80 -n marketplace
+
+k8s-clean: ## Limpar recursos do Kubernetes
+	./k8s/cleanup.sh
+
+k8s-restart: ## Reiniciar deployment da API
+	kubectl rollout restart deployment/marketplace-api -n marketplace
+
+# Build & Test
+build: ## Build da aplicação
+	npm run build
+
+build-docker: ## Build da imagem Docker
+	docker build -t marketplace-api:latest .
+
+test: ## Executar testes
+	npm test
+
+test-watch: ## Executar testes em modo watch
+	npm run test:watch
+
+test-cov: ## Executar testes com cobertura
+	npm run test:cov
+
+lint: ## Executar linter
+	npm run lint
+
+format: ## Formatar código
+	npm run format
+
+# Development
+dev: ## Modo desenvolvimento (sem Docker)
+	npm run start:dev
+
+debug: ## Modo debug
+	npm run start:debug
+
+# Utilities
+health: ## Verificar health da API
+	@curl -s http://localhost:3000/health | jq '.' || echo "API não está respondendo"
+
+swagger: ## Abrir documentação Swagger
+	@xdg-open http://localhost:3000/api 2>/dev/null || open http://localhost:3000/api 2>/dev/null || echo "http://localhost:3000/api"
+
+clean: ## Limpar node_modules e builds
+	rm -rf node_modules dist coverage
+
+setup: install build ## Setup completo do projeto
+
+# Minikube
+minikube-start: ## Iniciar Minikube
+	minikube start --memory=4096 --cpus=2
+	minikube addons enable ingress
+
+minikube-stop: ## Parar Minikube
+	minikube stop
+
+minikube-delete: ## Deletar Minikube
+	minikube delete
+
+minikube-dashboard: ## Abrir dashboard do Minikube
+	minikube dashboard
+
+minikube-service: ## Abrir serviço no Minikube
+	minikube service marketplace-api-service -n marketplace
+
+# Aliases
+up: dev-docker
+down: dev-docker-down
+logs: dev-docker-logs
+restart: down up

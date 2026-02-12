@@ -1,62 +1,108 @@
 version: '3.9'
 
 services:
-  dynamodb:
-    image: amazon/dynamodb-local
-    container_name: dynamodb-local
-    command: -jar DynamoDBLocal.jar -sharedDb
+  # ==========================================
+  # LocalStack - Emulador AWS Completo
+  # ==========================================
+  localstack:
+    image: localstack/localstack:latest
+    container_name: marketplace-localstack
     ports:
-      - "8000:8000"
+      - "4566:4566"            # LocalStack Gateway
+      - "4510-4559:4510-4559"  # Serviços externos
+    environment:
+      - SERVICES=dynamodb,s3,sns,ses,ec2
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - LAMBDA_EXECUTOR=docker-reuse
+      - LOCALSTACK_HOST=localstack
     volumes:
-      - ./docker/dynamo/data:/home/dynamodblocal/data
+      - "./localstack-data:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./scripts/init-localstack.sh:/etc/localstack/init/ready.d/init-localstack.sh"
     networks:
       - app-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  db-init:
-    build:
-      context: .
-      target: development
-    container_name: dynamodb-init
-    command: sh -c "chmod +x /app/scripts/init-db.sh && /app/scripts/init-db.sh"
+  # ==========================================
+  # Terraform - Inicialização da Infraestrutura
+  # ==========================================
+  terraform-init:
+    image: hashicorp/terraform:latest
+    container_name: marketplace-terraform
+    working_dir: /workspace
     volumes:
-      - .:/app
-      - node_modules:/app/node_modules
-      - pnpm-store:/root/.local/share/pnpm/store
+      - ./terraform:/workspace
     environment:
-      AWS_REGION: "us-east-1"
-      DYNAMO_ENDPOINT: "http://dynamodb:8000"
-      TABLE_NAME: "Marketplace"
-      AWS_ACCESS_KEY_ID: "fake"
-      AWS_SECRET_ACCESS_KEY: "fake"
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+    command: >
+      sh -c "
+        echo '🚀 Inicializando Terraform...'
+        terraform init
+        echo '📋 Planejando infraestrutura...'
+        terraform plan -out=tfplan
+        echo '✅ Aplicando infraestrutura...'
+        terraform apply -auto-approve tfplan
+        echo '🎉 Infraestrutura criada com sucesso!'
+        echo ''
+        echo '📊 Recursos criados:'
+        terraform output
+      "
     depends_on:
-      - dynamodb
+      localstack:
+        condition: service_healthy
     networks:
       - app-net
     restart: "no"
 
+  # ==========================================
+  # API NestJS
+  # ==========================================
   api:
     build:
       context: .
       target: development
     container_name: marketplace-api
-    command: pnpm run start:dev
+    command: npm run start:dev
     ports:
       - "3000:3000"
     volumes:
       - .:/app
       - node_modules:/app/node_modules
-      - pnpm-store:/root/.local/share/pnpm/store
     environment:
-      AWS_REGION: "us-east-1"
-      DYNAMO_ENDPOINT: "http://dynamodb:8000"
-      TABLE_NAME: "Marketplace"
+      # Node
+      - NODE_ENV=development
+      - PORT=3000
+      # AWS
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_ENDPOINT=http://localstack:4566
+      # DynamoDB
+      - DYNAMODB_TABLE=Marketplace
+      # S3
+      - AWS_S3_BUCKET=marketplace-bucket
+      - PRESIGNED_URL_EXPIRATION=3600
+      # JWT
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - JWT_EXPIRATION_TIME=3600
     depends_on:
-      db-init:
+      terraform-init:
         condition: service_completed_successfully
-      dynamodb:
-        condition: service_started
     networks:
       - app-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
   app-net:
@@ -64,5 +110,5 @@ networks:
 
 volumes:
   node_modules:
-  pnpm-store:
+  localstack-data:
 
