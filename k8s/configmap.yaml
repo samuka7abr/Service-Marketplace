@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: marketplace-config
+  namespace: marketplace
+data:
+  NODE_ENV: "development"
+  PORT: "3000"
+  AWS_REGION: "us-east-1"
+  AWS_ENDPOINT: "http://localstack-service:4566"
+  DYNAMODB_TABLE: "Marketplace"
+  AWS_S3_BUCKET: "marketplace-bucket"
+  PRESIGNED_URL_EXPIRATION: "3600"
+  JWT_EXPIRATION_TIME: "3600"
